@@ -31,7 +31,7 @@ cbindgen = "0.14"
 [lib]
 name = "lrzhs_ffi"
 path = "src/lib.rs"
-crate-type = ["staticlib"]
+crate-type = ["cdylib"]
 
 [profile.release]
 lto = true

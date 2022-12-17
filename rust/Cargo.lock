@@ -893,7 +893,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "lrzhs-ffi"
+name = "lrzhs_ffi"
 version = "0.1.0"
 dependencies = [
  "cbindgen",
