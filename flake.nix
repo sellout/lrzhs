@@ -54,11 +54,16 @@
         inputsFrom = 
           builtins.attrValues self.packages.${system};
 
-        nativeBuildInputs = with hspkgs; [
+        buildInputs = [
           lrzhs_ffi
+        ];
+
+        nativeBuildInputs = with hspkgs; [
           haskell-language-server
           cabal-install
         ];
+
+        LD_LIBRARY_PATH = ["${lrzhs_ffi}/lib/"];
       };
     };
   });
