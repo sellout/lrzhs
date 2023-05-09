@@ -1,6 +1,4 @@
-module Lrzhs.Types
-  (Network(..))
-  where
+module Lrzhs.Types (Network (..)) where
 
 data Network
   = Mainnet
