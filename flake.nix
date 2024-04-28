@@ -10,9 +10,9 @@
     };
   };
 
-  outputs = { 
-    self, 
-    nixpkgs, 
+  outputs = {
+    self,
+    nixpkgs,
     flake-utils,
     crane,
     ...
@@ -34,7 +34,7 @@
     haskell = pkgs.haskellPackages;
 
     haskell-overlay = final: prev: {
-      lrzhs = pkgs.haskellPackages.callCabal2nix "lrzhs" ./. { 
+      lrzhs = pkgs.haskellPackages.callCabal2nix "lrzhs" ./. {
         inherit lrzhs_ffi;
       };
     };
@@ -51,7 +51,7 @@
 
     devShells = {
       default = pkgs.mkShell {
-        inputsFrom = 
+        inputsFrom =
           builtins.attrValues self.packages.${system};
 
         buildInputs = [
