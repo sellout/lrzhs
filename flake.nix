@@ -70,18 +70,10 @@
           builtins.attrValues self.packages.${system};
 
         buildInputs = [
-          lrzhs_ffi
-        ];
-
-        nativeBuildInputs = [
-          ## HLS needs to match the GHC version.
+          (lrzhs_ffi pkgs)
           pkgs.haskellPackages.haskell-language-server
-          ## Cabal should just generally use a supported version, rather than
-          ## one specific to the GHC version.
           pkgs.cabal-install
         ];
-
-        LD_LIBRARY_PATH = ["${lrzhs_ffi pkgs}/lib/"];
       };
     };
   });
