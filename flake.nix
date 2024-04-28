@@ -16,37 +16,52 @@
     flake-utils,
     crane,
     ...
-  }: flake-utils.lib.eachDefaultSystem(system: let
-    pkgs = import nixpkgs { inherit system; };
+  }: let
+    ## Define local packages, parameterized over the package set.
 
-    craneLib = crane.lib.${system};
-    lrzhs_ffi = craneLib.buildPackage {
-      src = craneLib.cleanCargoSource ./rust/.;
+    lrzhs_ffi = pkgs: let
+      craneLib = crane.lib.${pkgs.system};
+    in
+      craneLib.buildPackage {
+        src = craneLib.cleanCargoSource ./rust/.;
 
-      buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
-        pkgs.darwin.apple_sdk.frameworks.Security
-        pkgs.libiconv
-      ];
+        buildInputs = nixpkgs.lib.optionals pkgs.stdenv.isDarwin [
+          pkgs.darwin.apple_sdk.frameworks.Security
+          pkgs.libiconv
+        ];
 
-      doCheck = true;
-    };
+        doCheck = true;
+      };
 
-    haskell = pkgs.haskellPackages;
-
-    haskell-overlay = final: prev: {
-      lrzhs = pkgs.haskellPackages.callCabal2nix "lrzhs" ./. {
+    lrzhs = lrzhs_ffi: hpkgs:
+      hpkgs.callCabal2nix "lrzhs" ./. {
         inherit lrzhs_ffi;
       };
-    };
-
-    hspkgs = haskell.override {
-      overrides = haskell-overlay;
-    };
   in {
+    overlays = {
+      ## The default overlay uses the local packages specialized to `final`.
+      default = final: prev: {
+        lrzhs_ffi = lrzhs_ffi final;
+
+        haskellPackages =
+          prev.haskellPackages.extend (self.overlays.haskell final prev);
+      };
+
+      ## The haskell overlay allows users to apply the local packages to any GHC
+      ## package set, not just `pkgs.haskellPackages`.
+      haskell = final: prev: hfinal: hprev: {
+        lrzhs = lrzhs (lrzhs_ffi final) hfinal;
+      };
+    };
+  }
+  // flake-utils.lib.eachDefaultSystem(system: let
+    pkgs = import nixpkgs { inherit system; };
+  in {
+    ## The packages output publishes the local packages using the flake inputs.
     packages = {
       default = self.packages.${system}.lrzhs;
-      lrzhs = hspkgs.lrzhs;
-      inherit lrzhs_ffi;
+      lrzhs = lrzhs (lrzhs_ffi pkgs) pkgs.haskellPackages;
+      lrzhs_ffi = lrzhs_ffi pkgs;
     };
 
     devShells = {
@@ -58,12 +73,15 @@
           lrzhs_ffi
         ];
 
-        nativeBuildInputs = with hspkgs; [
-          haskell-language-server
-          cabal-install
+        nativeBuildInputs = [
+          ## HLS needs to match the GHC version.
+          pkgs.haskellPackages.haskell-language-server
+          ## Cabal should just generally use a supported version, rather than
+          ## one specific to the GHC version.
+          pkgs.cabal-install
         ];
 
-        LD_LIBRARY_PATH = ["${lrzhs_ffi}/lib/"];
+        LD_LIBRARY_PATH = ["${lrzhs_ffi pkgs}/lib/"];
       };
     };
   });
